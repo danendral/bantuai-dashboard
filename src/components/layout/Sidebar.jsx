@@ -7,8 +7,10 @@ import {
   PanelLeftClose,
   PanelLeft,
   Bot,
+  LogOut,
 } from 'lucide-react'
 import { useState } from 'react'
+import { useAuth } from '../../context/AuthContext'
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -19,6 +21,7 @@ const navItems = [
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
+  const { logout } = useAuth()
 
   return (
     <aside
@@ -70,8 +73,16 @@ export default function Sidebar() {
           </div>
         )}
         <button
+          onClick={logout}
+          className="mt-2 w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-sidebar-hover hover:text-white transition-colors"
+          title={collapsed ? 'Logout' : undefined}
+        >
+          <LogOut className="w-4 h-4 shrink-0" />
+          {!collapsed && <span>Logout</span>}
+        </button>
+        <button
           onClick={() => setCollapsed(!collapsed)}
-          className="mt-2 p-1.5 rounded hover:bg-sidebar-hover text-slate-400 hover:text-white transition-colors"
+          className="mt-1 p-1.5 rounded hover:bg-sidebar-hover text-slate-400 hover:text-white transition-colors"
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? (
