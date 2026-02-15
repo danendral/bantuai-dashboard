@@ -3,8 +3,6 @@ import { DatabaseZap } from 'lucide-react'
 import QueryInput from '../components/talkdb/QueryInput'
 import ResponseCard from '../components/talkdb/ResponseCard'
 
-const WEBHOOK_URL = import.meta.env.VITE_N8N_TALKDB_WEBHOOK_URL
-
 export default function TalkToDBPage() {
   const [history, setHistory] = useState([])
   const [loading, setLoading] = useState(false)
@@ -15,11 +13,7 @@ export default function TalkToDBPage() {
     setLoading(true)
 
     try {
-      if (!WEBHOOK_URL) {
-        throw new Error('Webhook URL is not configured. Set VITE_N8N_TALKDB_WEBHOOK_URL in .env')
-      }
-
-      const res = await fetch(WEBHOOK_URL, {
+      const res = await fetch('/api/talkdb', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query }),
