@@ -14,11 +14,11 @@ import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 
 const navItems = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/tickets', label: 'Tickets', icon: Ticket },
-  { to: '/conversations', label: 'Conversations', icon: MessageSquare },
-  { to: '/products', label: 'Products', icon: Package },
-  { to: '/talk-to-db', label: 'Talk to DB', icon: DatabaseZap },
+  { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/admin/tickets', label: 'Tickets', icon: Ticket },
+  { to: '/admin/conversations', label: 'Conversations', icon: MessageSquare },
+  { to: '/admin/products', label: 'Products', icon: Package },
+  { to: '/admin/talk-to-db', label: 'Talk to DB', icon: DatabaseZap },
 ]
 
 export default function Sidebar() {
@@ -50,7 +50,7 @@ export default function Sidebar() {
           <NavLink
             key={to}
             to={to}
-            end={to === '/'}
+            end={to === '/admin'}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive

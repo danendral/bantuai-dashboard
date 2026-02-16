@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Bot, LogIn } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
@@ -12,7 +12,7 @@ export default function LoginPage() {
 
   // If already logged in, redirect to dashboard
   if (user) {
-    navigate('/', { replace: true })
+    navigate('/admin', { replace: true })
     return null
   }
 
@@ -21,7 +21,7 @@ export default function LoginPage() {
     setError(null)
     const result = login(email, password)
     if (result.success) {
-      navigate('/', { replace: true })
+      navigate('/admin', { replace: true })
     } else {
       setError(result.error)
     }
@@ -88,9 +88,14 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-[11px] text-slate-500 mt-6">
-          Powered by <span className="text-slate-400">BantuAI</span>
-        </p>
+        <div className="text-center mt-6 space-y-2">
+          <Link to="/" className="text-primary hover:text-primary-dark text-xs">
+            &larr; Back to Home
+          </Link>
+          <p className="text-[11px] text-slate-500">
+            Powered by <span className="text-slate-400">BantuAI</span>
+          </p>
+        </div>
       </div>
     </div>
   )
