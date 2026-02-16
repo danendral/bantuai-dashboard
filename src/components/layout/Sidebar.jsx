@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   Ticket,
   MessageSquare,
+  Package,
   DatabaseZap,
   PanelLeftClose,
   PanelLeft,
@@ -16,6 +17,7 @@ const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/tickets', label: 'Tickets', icon: Ticket },
   { to: '/conversations', label: 'Conversations', icon: MessageSquare },
+  { to: '/products', label: 'Products', icon: Package },
   { to: '/talk-to-db', label: 'Talk to DB', icon: DatabaseZap },
 ]
 
