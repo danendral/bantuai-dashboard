@@ -14,6 +14,7 @@ import {
   Headphones,
   X,
   Package,
+  Loader2,
 } from 'lucide-react'
 
 const features = [
@@ -146,6 +147,7 @@ export default function HomePage() {
 
   // Chat widget state
   const [chatOpen, setChatOpen] = useState(false)
+  const [iframeLoaded, setIframeLoaded] = useState(false)
 
   // Fetch products on mount
   useEffect(() => {
@@ -370,19 +372,35 @@ export default function HomePage() {
               </button>
             </div>
 
+            {/* Loading indicator */}
+            {!iframeLoaded && (
+              <div className="flex-1 flex flex-col items-center justify-center gap-3 bg-gray-50">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                <p className="text-sm text-gray-500">Loading chat...</p>
+              </div>
+            )}
+
             {/* Chat iframe */}
             <iframe
               src={N8N_CHAT_URL}
               title="GadgetNusa Support Chat"
-              className="flex-1 w-full border-0"
+              className={`flex-1 w-full border-0 ${!iframeLoaded ? 'hidden' : ''}`}
               allow="microphone"
+              onLoad={() => setIframeLoaded(true)}
             />
           </div>
         )}
 
         {/* Toggle button */}
         <button
-          onClick={() => setChatOpen((prev) => !prev)}
+          onClick={() => {
+            if (chatOpen) {
+              setChatOpen(false)
+              setIframeLoaded(false)
+            } else {
+              setChatOpen(true)
+            }
+          }}
           className="bg-primary hover:bg-primary-dark text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-colors ml-auto"
           title="Chat with us"
         >
