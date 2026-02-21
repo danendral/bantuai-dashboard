@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { formatCurrency } from '../lib/formatters'
+import ChatWidget from '../components/chat/ChatWidget'
 import {
   Bot,
   ShoppingBag,
@@ -12,9 +13,7 @@ import {
   Smartphone,
   Laptop,
   Headphones,
-  X,
   Package,
-  Loader2,
 } from 'lucide-react'
 
 const features = [
@@ -53,9 +52,6 @@ const CATEGORY_CONFIG = {
   laptop: { icon: Laptop, label: 'Laptops', order: 1 },
   earbuds: { icon: Headphones, label: 'Earbuds', order: 2 },
 }
-
-const N8N_CHAT_URL =
-  'https://n8n-vug6t4symkyp.caca.sumopod.my.id/webhook/28b8b63b-297e-433a-9898-ea82d106dfdb/chat'
 
 function SegmentBadge({ segment }) {
   if (!segment) return null
@@ -144,10 +140,6 @@ export default function HomePage() {
   const [products, setProducts] = useState([])
   const [productsLoading, setProductsLoading] = useState(true)
   const [productsError, setProductsError] = useState(null)
-
-  // Chat widget state
-  const [chatOpen, setChatOpen] = useState(false)
-  const [iframeLoaded, setIframeLoaded] = useState(false)
 
   // Fetch products on mount
   useEffect(() => {
@@ -354,63 +346,7 @@ export default function HomePage() {
       </section>
 
       {/* Chat Widget */}
-      <div id="support" className="fixed bottom-6 right-6 z-50">
-        {/* Chat panel */}
-        {chatOpen && (
-          <div className="mb-3 w-[400px] h-[500px] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col">
-            {/* Chat header */}
-            <div className="bg-primary px-4 py-3 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2">
-                <Bot className="w-5 h-5 text-white" />
-                <span className="text-sm font-medium text-white">GadgetNusa Support</span>
-              </div>
-              <button
-                onClick={() => setChatOpen(false)}
-                className="text-white/80 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Loading indicator */}
-            {!iframeLoaded && (
-              <div className="flex-1 flex flex-col items-center justify-center gap-3 bg-gray-50">
-                <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                <p className="text-sm text-gray-500">Loading chat...</p>
-              </div>
-            )}
-
-            {/* Chat iframe */}
-            <iframe
-              src={N8N_CHAT_URL}
-              title="GadgetNusa Support Chat"
-              className={`flex-1 w-full border-0 ${!iframeLoaded ? 'hidden' : ''}`}
-              allow="microphone"
-              onLoad={() => setIframeLoaded(true)}
-            />
-          </div>
-        )}
-
-        {/* Toggle button */}
-        <button
-          onClick={() => {
-            if (chatOpen) {
-              setChatOpen(false)
-              setIframeLoaded(false)
-            } else {
-              setChatOpen(true)
-            }
-          }}
-          className="bg-primary hover:bg-primary-dark text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-colors ml-auto"
-          title="Chat with us"
-        >
-          {chatOpen ? (
-            <X className="w-6 h-6" />
-          ) : (
-            <MessageCircle className="w-6 h-6" />
-          )}
-        </button>
-      </div>
+      <ChatWidget />
 
       {/* Footer */}
       <footer className="bg-sidebar text-white mt-auto">
