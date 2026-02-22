@@ -102,6 +102,24 @@ export default function ChatWidget() {
     }
   }, [isOpen, messages.length])
 
+  // Listen for external events to open chat + send product inquiry
+  useEffect(() => {
+    function handleOpenChat(e) {
+      setIsOpen(true)
+      // If a message is provided, auto-send it
+      if (e.detail?.message) {
+        // Small delay to let widget open and render first
+        setTimeout(() => {
+          sendMessage(e.detail.message)
+        }, 300)
+      }
+    }
+
+    window.addEventListener('gadgetnusa:open-chat', handleOpenChat)
+    return () => window.removeEventListener('gadgetnusa:open-chat', handleOpenChat)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, sessionId]) // re-register when dependencies change
+
   const sendMessage = async (messageText) => {
     const trimmed = (messageText || input).trim()
     if (!trimmed || isLoading) return

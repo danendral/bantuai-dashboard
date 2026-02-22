@@ -20,6 +20,7 @@ import {
   ChevronRight,
   Zap,
   Search,
+  X,
 } from 'lucide-react'
 
 /* ------------------------------------------------------------------ */
@@ -45,6 +46,16 @@ const TRUST_BADGES = [
   { icon: RefreshCw, label: '7 Hari Retur', desc: 'Tukar tanpa ribet' },
   { icon: Shield, label: 'Pembayaran Aman', desc: 'Transaksi terenkripsi' },
 ]
+
+/* ------------------------------------------------------------------ */
+/*  Helper: dispatch chat event                                        */
+/* ------------------------------------------------------------------ */
+
+function openChatWidget(message) {
+  window.dispatchEvent(
+    new CustomEvent('gadgetnusa:open-chat', { detail: message ? { message } : undefined })
+  )
+}
 
 /* ------------------------------------------------------------------ */
 /*  Sub-components                                                     */
@@ -75,12 +86,15 @@ function StockBadge({ inStock }) {
   )
 }
 
-function ProductCard({ product }) {
+function ProductCard({ product, onClick }) {
   const categoryConfig = CATEGORY_CONFIG[product.category]
   const PlaceholderIcon = categoryConfig?.icon || Package
 
   return (
-    <div className="group bg-white rounded-2xl border border-stone-200/80 overflow-hidden hover:shadow-lg hover:border-nusa-orange/30 transition-all duration-300">
+    <button
+      onClick={() => onClick(product)}
+      className="group bg-white rounded-2xl border border-stone-200/80 overflow-hidden hover:shadow-lg hover:border-nusa-orange/30 transition-all duration-300 text-left w-full"
+    >
       {/* Image */}
       <div className="bg-warm-gray h-52 flex items-center justify-center relative overflow-hidden">
         {product.image_url ? (
@@ -125,7 +139,7 @@ function ProductCard({ product }) {
 
         <p className="text-[10px] text-stone-400 font-mono">{product.sku}</p>
       </div>
-    </div>
+    </button>
   )
 }
 
@@ -144,6 +158,150 @@ function ProductCardSkeleton() {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Product Detail Modal                                               */
+/* ------------------------------------------------------------------ */
+
+function ProductDetailModal({ product, onClose }) {
+  if (!product) return null
+
+  const categoryConfig = CATEGORY_CONFIG[product.category]
+  const PlaceholderIcon = categoryConfig?.icon || Package
+  const categoryLabel = categoryConfig?.label || product.category
+
+  function handleChatAboutProduct() {
+    onClose()
+    // Slight delay so modal closes before chat opens
+    setTimeout(() => {
+      openChatWidget(
+        `Halo, saya ingin bertanya tentang produk ${product.name} (SKU: ${product.sku}). Apakah tersedia? Berapa harganya dan apa saja spesifikasinya?`
+      )
+    }, 200)
+  }
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-fade-in">
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-10 w-8 h-8 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-sm border border-stone-200 transition-colors"
+        >
+          <X className="w-4 h-4 text-dark-gray" />
+        </button>
+
+        {/* Image */}
+        <div className="bg-warm-gray h-64 sm:h-80 flex items-center justify-center relative">
+          {product.image_url ? (
+            <img
+              src={product.image_url}
+              alt={product.name}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <PlaceholderIcon className="w-24 h-24 text-stone-300" />
+          )}
+          <div className="absolute top-4 left-4">
+            <StockBadge inStock={product.in_stock} />
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 sm:p-8">
+          {/* Header */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-semibold text-medium-gray uppercase tracking-wide">
+                {product.brand}
+              </span>
+              <span className="text-stone-300">&middot;</span>
+              <span className="text-xs text-medium-gray">{categoryLabel}</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-dark-gray leading-tight mb-3">
+              {product.name}
+            </h2>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star
+                    key={i}
+                    className={`w-4 h-4 ${i < 4 ? 'text-warm-yellow fill-warm-yellow' : 'text-stone-200 fill-stone-200'}`}
+                  />
+                ))}
+              </div>
+              <span className="text-xs text-medium-gray">4.0 (120 ulasan)</span>
+            </div>
+          </div>
+
+          {/* Price */}
+          <div className="flex items-center gap-3 mb-6">
+            <span className="text-2xl sm:text-3xl font-extrabold text-nusa-orange">
+              {formatCurrency(product.price)}
+            </span>
+            <SegmentBadge segment={product.segment} />
+          </div>
+
+          {/* Details grid */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-warm-gray rounded-xl p-3">
+              <p className="text-[10px] text-medium-gray font-medium uppercase tracking-wide mb-0.5">SKU</p>
+              <p className="text-sm font-semibold text-dark-gray font-mono">{product.sku}</p>
+            </div>
+            <div className="bg-warm-gray rounded-xl p-3">
+              <p className="text-[10px] text-medium-gray font-medium uppercase tracking-wide mb-0.5">Kategori</p>
+              <p className="text-sm font-semibold text-dark-gray">{categoryLabel}</p>
+            </div>
+            <div className="bg-warm-gray rounded-xl p-3">
+              <p className="text-[10px] text-medium-gray font-medium uppercase tracking-wide mb-0.5">Segmen</p>
+              <p className="text-sm font-semibold text-dark-gray capitalize">{product.segment || '-'}</p>
+            </div>
+            <div className="bg-warm-gray rounded-xl p-3">
+              <p className="text-[10px] text-medium-gray font-medium uppercase tracking-wide mb-0.5">Stok</p>
+              <p className={`text-sm font-semibold ${product.in_stock ? 'text-fresh-green' : 'text-red-500'}`}>
+                {product.in_stock ? 'Tersedia' : 'Habis'}
+              </p>
+            </div>
+          </div>
+
+          {/* Trust badges */}
+          <div className="flex flex-wrap gap-3 mb-6 pb-6 border-b border-stone-200">
+            {TRUST_BADGES.slice(0, 3).map(({ icon: Icon, label }) => (
+              <div key={label} className="flex items-center gap-1.5 text-xs text-medium-gray">
+                <Icon className="w-3.5 h-3.5 text-nusa-orange" />
+                {label}
+              </div>
+            ))}
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={handleChatAboutProduct}
+              className="flex-1 inline-flex items-center justify-center gap-2 bg-nusa-orange hover:bg-nusa-orange-dark text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Tanya Tentang Produk Ini
+            </button>
+            <button
+              onClick={onClose}
+              className="flex-1 inline-flex items-center justify-center gap-2 border border-stone-200 text-dark-gray hover:bg-stone-50 font-semibold px-6 py-3 rounded-xl transition-colors text-sm"
+            >
+              Kembali ke Katalog
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
 /*  Main Page Component                                                */
 /* ------------------------------------------------------------------ */
 
@@ -155,6 +313,7 @@ export default function HomePage() {
   const [productsLoading, setProductsLoading] = useState(true)
   const [productsError, setProductsError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedProduct, setSelectedProduct] = useState(null)
 
   // Fetch products on mount
   useEffect(() => {
@@ -321,7 +480,7 @@ export default function HomePage() {
                 Lihat Produk
               </a>
               <button
-                onClick={() => document.getElementById('support')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={() => openChatWidget()}
                 className="inline-flex items-center gap-2 border border-stone-600 text-stone-300 hover:bg-stone-800 font-semibold px-6 py-3 rounded-xl transition-colors text-sm"
               >
                 <MessageCircle className="w-4 h-4" />
@@ -459,7 +618,11 @@ export default function HomePage() {
                     {/* Product grid */}
                     <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                       {categoryProducts.map((product) => (
-                        <ProductCard key={product.id} product={product} />
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          onClick={setSelectedProduct}
+                        />
                       ))}
                     </div>
                   </div>
@@ -489,13 +652,28 @@ export default function HomePage() {
               <p className="text-stone-400 text-sm md:text-base leading-relaxed mb-6">
                 AI Assistant kami siap membantu 24/7. Tanyakan tentang produk, harga, stok, pengiriman, atau garansi. Dalam Bahasa Indonesia!
               </p>
-              <p className="text-[11px] text-stone-500">
-                Powered by <span className="text-stone-400 font-medium">BantuAI</span> &middot; Customer Intelligence Engine
+              <button
+                onClick={() => openChatWidget()}
+                className="inline-flex items-center gap-2 bg-nusa-orange hover:bg-nusa-orange-dark text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm"
+              >
+                <MessageCircle className="w-4 h-4" />
+                Mulai Chat Sekarang
+              </button>
+              <p className="text-[11px] text-stone-600 mt-4">
+                Powered by <span className="text-stone-500 font-medium">BantuAI</span> &middot; Customer Intelligence Engine
               </p>
             </div>
           </div>
         </div>
       </section>
+
+      {/* ============================================================ */}
+      {/*  PRODUCT DETAIL MODAL                                        */}
+      {/* ============================================================ */}
+      <ProductDetailModal
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+      />
 
       {/* ============================================================ */}
       {/*  CHAT WIDGET                                                 */}
@@ -543,7 +721,7 @@ export default function HomePage() {
               <ul className="space-y-2">
                 <li>
                   <button
-                    onClick={() => document.getElementById('support')?.scrollIntoView({ behavior: 'smooth' })}
+                    onClick={() => openChatWidget()}
                     className="text-sm text-stone-500 hover:text-nusa-orange transition-colors"
                   >
                     AI Customer Support
