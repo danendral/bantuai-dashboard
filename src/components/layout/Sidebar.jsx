@@ -7,7 +7,7 @@ import {
   DatabaseZap,
   PanelLeftClose,
   PanelLeft,
-  Bot,
+  Zap,
   LogOut,
 } from 'lucide-react'
 import { useState } from 'react'
@@ -33,12 +33,16 @@ export default function Sidebar() {
     >
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-white/10">
-        <Bot className="w-8 h-8 text-primary shrink-0" />
+        <div className="w-8 h-8 bg-nusa-orange rounded-lg flex items-center justify-center shrink-0">
+          <Zap className="w-4 h-4 text-white" />
+        </div>
         {!collapsed && (
           <div className="min-w-0">
-            <h1 className="text-lg font-bold leading-tight">BantuAI</h1>
-            <p className="text-[11px] text-slate-400 leading-tight">
-              Customer Intelligence Engine
+            <h1 className="text-base font-extrabold leading-tight tracking-tight">
+              Gadget<span className="text-nusa-orange">Nusa</span>
+            </h1>
+            <p className="text-[10px] text-stone-500 leading-tight">
+              Admin Dashboard
             </p>
           </div>
         )}
@@ -54,8 +58,8 @@ export default function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-primary text-white'
-                  : 'text-slate-300 hover:bg-sidebar-hover hover:text-white'
+                  ? 'bg-nusa-orange text-white'
+                  : 'text-stone-400 hover:bg-sidebar-hover hover:text-white'
               }`
             }
             title={collapsed ? label : undefined}
@@ -69,14 +73,13 @@ export default function Sidebar() {
       {/* Footer */}
       <div className="border-t border-white/10 px-4 py-3">
         {!collapsed && (
-          <div className="text-[11px] text-slate-500 space-y-0.5">
-            <p>Powered by <span className="text-slate-400">BantuAI</span></p>
-            <p>Client: <span className="text-slate-400">GadgetNusa</span></p>
+          <div className="text-[10px] text-stone-600 space-y-0.5">
+            <p>Powered by <span className="text-stone-500">BantuAI</span></p>
           </div>
         )}
         <button
           onClick={logout}
-          className="mt-2 w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-sidebar-hover hover:text-white transition-colors"
+          className="mt-2 w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-stone-400 hover:bg-sidebar-hover hover:text-white transition-colors"
           title={collapsed ? 'Logout' : undefined}
         >
           <LogOut className="w-4 h-4 shrink-0" />
@@ -84,7 +87,7 @@ export default function Sidebar() {
         </button>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="mt-1 p-1.5 rounded hover:bg-sidebar-hover text-slate-400 hover:text-white transition-colors"
+          className="mt-1 p-1.5 rounded hover:bg-sidebar-hover text-stone-500 hover:text-white transition-colors"
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? (

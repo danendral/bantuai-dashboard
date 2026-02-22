@@ -1,13 +1,30 @@
 @import "tailwindcss";
 
 @theme {
-  --color-sidebar: #1e293b;
-  --color-sidebar-hover: #334155;
-  --color-primary: #3b82f6;
-  --color-primary-dark: #2563eb;
-  --color-success: #10b981;
-  --color-success-dark: #059669;
+  /* GadgetNusa Brand Colors */
+  --color-nusa-orange: #F97316;
+  --color-nusa-orange-dark: #EA580C;
+  --color-nusa-orange-light: #FFF7ED;
+  --color-nusa-dark: #1C1917;
+  --color-tech-blue: #0EA5E9;
+  --color-tech-blue-dark: #0284C7;
+  --color-fresh-green: #22C55E;
+  --color-warm-yellow: #FACC15;
+  --color-warm-gray: #F5F5F4;
+  --color-medium-gray: #78716C;
+  --color-dark-gray: #292524;
+
+  /* Admin dashboard colors (keep existing for sidebar/admin) */
+  --color-sidebar: #1C1917;
+  --color-sidebar-hover: #292524;
+  --color-primary: #F97316;
+  --color-primary-dark: #EA580C;
+  --color-success: #22C55E;
+  --color-success-dark: #16A34A;
+
   --animate-slide-in: slide-in 0.3s ease-out;
+  --animate-fade-in: fade-in 0.5s ease-out;
+  --animate-fade-in-up: fade-in-up 0.6s ease-out;
 }
 
 @keyframes slide-in {
@@ -21,11 +38,28 @@
   }
 }
 
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 body {
   margin: 0;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color: #292524;
 }
 
 /* Scrollbar styling */
@@ -33,12 +67,12 @@ body {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #f5f5f4;
 }
 ::-webkit-scrollbar-thumb {
-  background: #94a3b8;
+  background: #a8a29e;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: #78716c;
 }
