@@ -138,6 +138,7 @@ export default function ChatWidget() {
         body: JSON.stringify({
           sessionId,
           message: trimmed,
+          channel: 'web',
         }),
       })
 
