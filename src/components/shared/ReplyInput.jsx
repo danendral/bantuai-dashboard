@@ -9,8 +9,8 @@ export default function ReplyInput({ conversationId, channel, onMessageSent }) {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState(null)
 
-  const channelLabel = channel === 'whatsapp' ? 'WhatsApp' : 'Web chat'
-  const ChannelIcon = channel === 'whatsapp' ? Smartphone : Globe
+  const channelLabel = channel === 'WhatsApp' ? 'WhatsApp' : 'Web chat'
+  const ChannelIcon = channel === 'WhatsApp' ? Smartphone : Globe
 
   async function handleSend() {
     const trimmed = text.trim()

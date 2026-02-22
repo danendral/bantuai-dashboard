@@ -125,7 +125,7 @@ export default function ConversationsPage() {
                       </td>
                       <td className="py-3 px-3">
                         <span className="inline-flex items-center gap-1 text-xs text-stone-600">
-                          {conv.channel === 'whatsapp' ? (
+                          {conv.channel === 'WhatsApp' ? (
                             <><Smartphone className="w-3 h-3 text-fresh-green" /> WhatsApp</>
                           ) : (
                             <><Globe className="w-3 h-3 text-tech-blue" /> Web</>

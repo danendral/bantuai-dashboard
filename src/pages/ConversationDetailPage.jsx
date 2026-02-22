@@ -155,7 +155,7 @@ export default function ConversationDetailPage() {
             <div>
               <label className="block text-xs text-stone-400 font-medium mb-1">Channel</label>
               <div className="flex items-center gap-1.5 text-dark-gray">
-                {conversation.channel === 'whatsapp' ? (
+                {conversation.channel === 'WhatsApp' ? (
                   <><Smartphone className="w-3.5 h-3.5 text-fresh-green" /> WhatsApp</>
                 ) : (
                   <><Globe className="w-3.5 h-3.5 text-tech-blue" /> Web</>
@@ -241,7 +241,7 @@ export default function ConversationDetailPage() {
                 💬 Conversation History
               </h3>
               <div className="flex items-center gap-2 text-xs text-stone-400">
-                {conversation.channel === 'whatsapp' ? (
+                {conversation.channel === 'WhatsApp' ? (
                   <><Smartphone className="w-3 h-3" /> WhatsApp</>
                 ) : (
                   <><Globe className="w-3 h-3" /> Web</>

@@ -2,7 +2,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 
 const CHANNEL_COLORS = {
   web: '#3b82f6',
-  whatsapp: '#22c55e',
+  WhatsApp: '#22c55e',
 }
 
 export default function ConversationsByChannelChart({ data, loading }) {
