@@ -20,6 +20,12 @@ export default function ReplyInput({ conversationId, channel, onMessageSent }) {
     setSending(true)
 
     try {
+      if (!ADMIN_REPLY_URL) {
+        throw new Error('VITE_N8N_ADMIN_REPLY_WEBHOOK_URL is not configured. Restart the dev server after adding it to .env')
+      }
+
+      console.log('Sending admin reply to:', ADMIN_REPLY_URL, { conversationId, message: trimmed })
+
       const res = await fetch(ADMIN_REPLY_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -36,7 +42,7 @@ export default function ReplyInput({ conversationId, channel, onMessageSent }) {
       if (onMessageSent) onMessageSent()
     } catch (err) {
       console.error('Reply error:', err)
-      setError('Gagal mengirim pesan. Silakan coba lagi.')
+      setError(err.message || 'Gagal mengirim pesan. Silakan coba lagi.')
     } finally {
       setSending(false)
     }
