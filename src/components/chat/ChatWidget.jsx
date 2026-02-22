@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Bot, MessageCircle, X, Send, Loader2, RotateCcw } from 'lucide-react'
+import { MessageCircle, X, Send, Loader2, RotateCcw, Zap } from 'lucide-react'
 
 const CHAT_WEBHOOK_URL = import.meta.env.VITE_N8N_CHAT_WEBHOOK_URL
 
@@ -12,15 +12,15 @@ function ChatBubble({ role, text }) {
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
-        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center mr-2 shrink-0 mt-1">
-          <Bot className="w-4 h-4 text-primary" />
+        <div className="w-7 h-7 rounded-lg bg-nusa-orange/10 flex items-center justify-center mr-2 shrink-0 mt-1">
+          <Zap className="w-3.5 h-3.5 text-nusa-orange" />
         </div>
       )}
       <div
         className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
           isUser
-            ? 'bg-primary text-white rounded-br-md'
-            : 'bg-gray-100 text-gray-800 rounded-bl-md'
+            ? 'bg-nusa-orange text-white rounded-br-md'
+            : 'bg-stone-100 text-dark-gray rounded-bl-md'
         }`}
       >
         {text}
@@ -29,19 +29,29 @@ function ChatBubble({ role, text }) {
   )
 }
 
-
 function TypingIndicator() {
   return (
     <div className="flex justify-start">
-      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center mr-2 shrink-0 mt-1">
-        <Bot className="w-4 h-4 text-primary" />
+      <div className="w-7 h-7 rounded-lg bg-nusa-orange/10 flex items-center justify-center mr-2 shrink-0 mt-1">
+        <Zap className="w-3.5 h-3.5 text-nusa-orange" />
       </div>
-      <div className="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1.5">
-        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0ms]" />
-        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:150ms]" />
-        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:300ms]" />
+      <div className="bg-stone-100 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1.5">
+        <span className="w-2 h-2 bg-stone-400 rounded-full animate-bounce [animation-delay:0ms]" />
+        <span className="w-2 h-2 bg-stone-400 rounded-full animate-bounce [animation-delay:150ms]" />
+        <span className="w-2 h-2 bg-stone-400 rounded-full animate-bounce [animation-delay:300ms]" />
       </div>
     </div>
+  )
+}
+
+function QuickReplyButton({ text, onClick }) {
+  return (
+    <button
+      onClick={() => onClick(text)}
+      className="inline-flex items-center px-3 py-1.5 bg-nusa-orange-light border border-nusa-orange/20 rounded-full text-xs font-medium text-nusa-orange-dark hover:bg-nusa-orange/10 transition-colors"
+    >
+      {text}
+    </button>
   )
 }
 
@@ -52,9 +62,18 @@ export default function ChatWidget() {
   const [isLoading, setIsLoading] = useState(false)
   const [sessionId] = useState(() => generateSessionId())
   const [error, setError] = useState(null)
+  const [showQuickReplies, setShowQuickReplies] = useState(true)
+  const [pendingMessage, setPendingMessage] = useState(null)
 
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
+
+  const QUICK_REPLIES = [
+    'Rekomendasi HP budget',
+    'Laptop untuk kerja',
+    'Earbuds terbaik',
+    'Cek stok produk',
+  ]
 
   // Auto-scroll to bottom when messages change
   const scrollToBottom = useCallback(() => {
@@ -78,19 +97,42 @@ export default function ChatWidget() {
       setMessages([
         {
           role: 'assistant',
-          text: 'Halo! Selamat datang di GadgetNusa. Ada yang bisa saya bantu hari ini? Silakan tanya tentang produk, harga, atau layanan kami.',
+          text: 'Halo! Selamat datang di GadgetNusa. Saya AI Assistant yang siap membantu Anda. Mau tanya soal produk, harga, atau stok? Silakan ketik atau pilih topik di bawah.',
         },
       ])
     }
   }, [isOpen, messages.length])
 
-  const sendMessage = async () => {
-    const trimmed = input.trim()
+  // Process pending message after widget opens and is ready
+  useEffect(() => {
+    if (isOpen && pendingMessage && !isLoading && messages.length > 0) {
+      const msg = pendingMessage
+      setPendingMessage(null)
+      doSendMessage(msg)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, pendingMessage, isLoading, messages.length])
+
+  // Listen for external events to open chat + optionally send a message
+  useEffect(() => {
+    function handleOpenChat(e) {
+      setIsOpen(true)
+      if (e.detail?.message) {
+        setPendingMessage(e.detail.message)
+      }
+    }
+
+    window.addEventListener('gadgetnusa:open-chat', handleOpenChat)
+    return () => window.removeEventListener('gadgetnusa:open-chat', handleOpenChat)
+  }, [])
+
+  async function doSendMessage(messageText) {
+    const trimmed = messageText.trim()
     if (!trimmed || isLoading) return
 
     setError(null)
-    const userMessage = { role: 'user', text: trimmed }
-    setMessages((prev) => [...prev, userMessage])
+    setShowQuickReplies(false)
+    setMessages((prev) => [...prev, { role: 'user', text: trimmed }])
     setInput('')
     setIsLoading(true)
 
@@ -100,7 +142,8 @@ export default function ChatWidget() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId,
-          message: trimmed
+          message: trimmed,
+          channel: 'web',
         }),
       })
 
@@ -110,7 +153,6 @@ export default function ChatWidget() {
 
       const data = await res.json()
 
-      // Handle different response shapes from n8n
       const reply =
         data.response ||
         data.output ||
@@ -134,10 +176,20 @@ export default function ChatWidget() {
     }
   }
 
+  function handleSend() {
+    if (input.trim()) {
+      doSendMessage(input)
+    }
+  }
+
+  function handleQuickReply(text) {
+    doSendMessage(text)
+  }
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      sendMessage()
+      handleSend()
     }
   }
 
@@ -145,50 +197,64 @@ export default function ChatWidget() {
     setMessages([
       {
         role: 'assistant',
-        text: 'Halo! Selamat datang di GadgetNusa. Ada yang bisa saya bantu hari ini? Silakan tanya tentang produk, harga, atau layanan kami.',
+        text: 'Halo! Selamat datang di GadgetNusa. Saya AI Assistant yang siap membantu Anda. Mau tanya soal produk, harga, atau stok? Silakan ketik atau pilih topik di bawah.',
       },
     ])
     setError(null)
-    // Note: sessionId stays the same within a page session.
-    // A new session starts on page reload.
+    setShowQuickReplies(true)
   }
 
   return (
     <div id="support" className="fixed bottom-6 right-6 z-50">
       {/* Chat panel */}
       {isOpen && (
-        <div className="mb-3 w-[400px] h-[550px] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col">
+        <div className="mb-3 w-[380px] sm:w-[420px] h-[560px] bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden flex flex-col animate-fade-in">
           {/* Header */}
-          <div className="bg-primary px-4 py-3 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-2">
-              <Bot className="w-5 h-5 text-white" />
+          <div className="bg-nusa-dark px-4 py-3.5 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-nusa-orange rounded-lg flex items-center justify-center">
+                <Zap className="w-4 h-4 text-white" />
+              </div>
               <div>
-                <span className="text-sm font-medium text-white">GadgetNusa Support</span>
-                <span className="block text-[10px] text-white/60">Powered by BantuAI</span>
+                <span className="text-sm font-bold text-white">GadgetNusa</span>
+                <span className="flex items-center gap-1.5 text-[10px] text-stone-500">
+                  <span className="w-1.5 h-1.5 bg-fresh-green rounded-full" />
+                  AI Assistant &middot; Online
+                </span>
               </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
               <button
                 onClick={handleNewChat}
-                className="text-white/60 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/10"
-                title="New conversation"
+                className="text-stone-500 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10"
+                title="Percakapan baru"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-white/60 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/10"
+                className="text-stone-500 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
           {/* Messages area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-white">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-warm-gray/50">
             {messages.map((msg, i) => (
               <ChatBubble key={i} role={msg.role} text={msg.text} />
             ))}
+
+            {/* Quick replies */}
+            {showQuickReplies && messages.length <= 1 && !isLoading && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {QUICK_REPLIES.map((text) => (
+                  <QuickReplyButton key={text} text={text} onClick={handleQuickReply} />
+                ))}
+              </div>
+            )}
+
             {isLoading && <TypingIndicator />}
             <div ref={messagesEndRef} />
           </div>
@@ -201,24 +267,24 @@ export default function ChatWidget() {
           )}
 
           {/* Input area */}
-          <div className="border-t border-gray-200 p-3 shrink-0 bg-white">
+          <div className="border-t border-stone-200 p-3 shrink-0 bg-white">
             <div className="flex items-end gap-2">
               <textarea
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ketik pesan Anda..."
+                placeholder="Ketik pesan..."
                 rows={1}
                 disabled={isLoading}
-                className="flex-1 resize-none rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary disabled:opacity-50 disabled:bg-gray-50 max-h-[80px] overflow-y-auto"
+                className="flex-1 resize-none rounded-xl border border-stone-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-nusa-orange/30 focus:border-nusa-orange disabled:opacity-50 disabled:bg-stone-50 max-h-[80px] overflow-y-auto"
                 style={{ minHeight: '40px' }}
               />
               <button
-                onClick={sendMessage}
+                onClick={handleSend}
                 disabled={!input.trim() || isLoading}
-                className="bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0"
-                title="Send message"
+                className="bg-nusa-orange hover:bg-nusa-orange-dark disabled:opacity-40 disabled:cursor-not-allowed text-white w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0"
+                title="Kirim pesan"
               >
                 {isLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -227,8 +293,8 @@ export default function ChatWidget() {
                 )}
               </button>
             </div>
-            <p className="text-[10px] text-gray-400 mt-1.5 text-center">
-              Tekan Enter untuk kirim, Shift+Enter untuk baris baru
+            <p className="text-[10px] text-stone-400 mt-1.5 text-center">
+              Enter untuk kirim &middot; Shift+Enter baris baru
             </p>
           </div>
         </div>
@@ -237,8 +303,8 @@ export default function ChatWidget() {
       {/* Toggle button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-primary hover:bg-primary-dark text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-colors ml-auto"
-        title="Chat with us"
+        className="bg-nusa-orange hover:bg-nusa-orange-dark text-white w-14 h-14 rounded-full shadow-lg shadow-nusa-orange/25 flex items-center justify-center transition-all duration-200 ml-auto hover:scale-105"
+        title="Chat dengan kami"
       >
         {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </button>
