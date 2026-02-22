@@ -1,51 +1,64 @@
-import { useState } from 'react'
-import { Send, Loader2, Globe, Smartphone } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Send, Globe, Smartphone } from 'lucide-react'
 
 const ADMIN_REPLY_URL = import.meta.env.VITE_N8N_ADMIN_REPLY_WEBHOOK_URL
 const ADMIN_NAME = 'Admin'
 
-export default function ReplyInput({ conversationId, channel, onMessageSent }) {
+export default function ReplyInput({ conversationId, channel, onOptimisticSend }) {
   const [text, setText] = useState('')
-  const [sending, setSending] = useState(false)
   const [error, setError] = useState(null)
+  const inputRef = useRef(null)
 
   const channelLabel = channel === 'WhatsApp' ? 'WhatsApp' : 'Web chat'
   const ChannelIcon = channel === 'WhatsApp' ? Smartphone : Globe
 
-  async function handleSend() {
+  // Auto-clear error after 4 seconds
+  useEffect(() => {
+    if (!error) return
+    const t = setTimeout(() => setError(null), 4000)
+    return () => clearTimeout(t)
+  }, [error])
+
+  function handleSend() {
     const trimmed = text.trim()
-    if (!trimmed || sending) return
+    if (!trimmed) return
 
-    setError(null)
-    setSending(true)
-
-    try {
-      if (!ADMIN_REPLY_URL) {
-        throw new Error('VITE_N8N_ADMIN_REPLY_WEBHOOK_URL is not configured. Restart the dev server after adding it to .env')
-      }
-
-      console.log('Sending admin reply to:', ADMIN_REPLY_URL, { conversationId, message: trimmed })
-
-      const res = await fetch(ADMIN_REPLY_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conversationId,
-          message: trimmed,
-          agentName: ADMIN_NAME,
-        }),
+    // Optimistically show the message in ChatHistory immediately
+    if (onOptimisticSend) {
+      onOptimisticSend({
+        id: `optimistic-${Date.now()}`,
+        conversation_id: conversationId,
+        role: 'agent',
+        content: trimmed,
+        created_at: new Date().toISOString(),
       })
-
-      if (!res.ok) throw new Error(`Request failed with status ${res.status}`)
-
-      setText('')
-      if (onMessageSent) onMessageSent()
-    } catch (err) {
-      console.error('Reply error:', err)
-      setError(err.message || 'Gagal mengirim pesan. Silakan coba lagi.')
-    } finally {
-      setSending(false)
     }
+
+    // Clear input immediately
+    setText('')
+    inputRef.current?.focus()
+
+    // Fire-and-forget: send to n8n in the background
+    if (!ADMIN_REPLY_URL) {
+      setError('Webhook URL belum dikonfigurasi')
+      return
+    }
+
+    fetch(ADMIN_REPLY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        conversationId,
+        message: trimmed,
+        agentName: ADMIN_NAME,
+      }),
+    })
+      .then((res) => {
+        if (!res.ok) setError('Gagal mengirim ke server')
+      })
+      .catch(() => {
+        setError('Gagal mengirim ke server')
+      })
   }
 
   function handleKeyDown(e) {
@@ -64,26 +77,22 @@ export default function ReplyInput({ conversationId, channel, onMessageSent }) {
       )}
       <div className="flex items-end gap-2">
         <textarea
+          ref={inputRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Ketik balasan..."
           rows={1}
-          disabled={sending}
-          className="flex-1 resize-none rounded-xl border border-stone-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-nusa-orange/30 focus:border-nusa-orange disabled:opacity-50 disabled:bg-stone-50 max-h-[80px] overflow-y-auto"
+          className="flex-1 resize-none rounded-xl border border-stone-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-nusa-orange/30 focus:border-nusa-orange max-h-[80px] overflow-y-auto"
           style={{ minHeight: '40px' }}
         />
         <button
           onClick={handleSend}
-          disabled={!text.trim() || sending}
+          disabled={!text.trim()}
           className="bg-fresh-green hover:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed text-white w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0"
           title="Kirim balasan"
         >
-          {sending ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Send className="w-4 h-4" />
-          )}
+          <Send className="w-4 h-4" />
         </button>
       </div>
       <div className="flex items-center gap-1.5 mt-2 text-[10px] text-stone-400">

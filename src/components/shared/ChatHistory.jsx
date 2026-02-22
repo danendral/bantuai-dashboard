@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useImperativeHandle, forwardRef } from 'react'
 import { Loader2, Bot, User, Headset } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { formatDate } from '../../lib/formatters'
@@ -65,11 +65,18 @@ function ChatBubble({ message, showModeSwitch }) {
   )
 }
 
-export default function ChatHistory({ conversationId }) {
+const ChatHistory = forwardRef(function ChatHistory({ conversationId }, ref) {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
   const messagesEndRef = useRef(null)
   const containerRef = useRef(null)
+
+  // Expose appendMessage to parent via ref
+  useImperativeHandle(ref, () => ({
+    appendMessage(msg) {
+      setMessages((prev) => [...prev, msg])
+    },
+  }))
 
   const fetchMessages = useCallback(async (showLoader) => {
     if (!conversationId) return
@@ -82,11 +89,7 @@ export default function ChatHistory({ conversationId }) {
       .order('created_at', { ascending: true })
 
     if (!error) {
-      setMessages((prev) => {
-        // Only update if message count changed (avoid unnecessary re-renders)
-        if (data.length !== prev.length) return data
-        return prev
-      })
+      setMessages(data)
     }
     if (showLoader) setLoading(false)
   }, [conversationId])
@@ -148,7 +151,7 @@ export default function ChatHistory({ conversationId }) {
     <div ref={containerRef} className="flex-1 overflow-y-auto p-4 space-y-3">
       {messages.map((msg, i) => (
         <ChatBubble
-          key={msg.id}
+          key={msg.id || `optimistic-${i}`}
           message={msg}
           showModeSwitch={modeSwitchIndices.has(i)}
         />
@@ -156,4 +159,6 @@ export default function ChatHistory({ conversationId }) {
       <div ref={messagesEndRef} />
     </div>
   )
-}
+})
+
+export default ChatHistory

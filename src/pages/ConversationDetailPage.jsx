@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatDate, formatLabel } from '../lib/formatters'
@@ -45,8 +45,8 @@ export default function ConversationDetailPage() {
   const [linkedTickets, setLinkedTickets] = useState([])
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
-  const [refreshKey, setRefreshKey] = useState(0)
   const [showCreateTicket, setShowCreateTicket] = useState(false)
+  const chatHistoryRef = useRef(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -83,7 +83,6 @@ export default function ConversationDetailPage() {
 
   function handleModeChange(updatedConv) {
     setConversation(updatedConv)
-    setRefreshKey((k) => k + 1)
     setToast({
       message: updatedConv.mode === 'human' ? 'Anda mengambil alih percakapan' : 'Percakapan dikembalikan ke AI',
       type: 'success',
@@ -118,21 +117,21 @@ export default function ConversationDetailPage() {
   const isHumanMode = conversation.mode === 'human'
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* Back button */}
       <button
         onClick={() => navigate('/admin/conversations')}
-        className="inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-nusa-orange mb-4 font-medium transition-colors self-start"
+        className="inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-nusa-orange mb-3 font-medium transition-colors self-start shrink-0"
       >
         <ArrowLeft className="w-4 h-4" /> Kembali ke Conversations
       </button>
 
       {/* Split layout */}
       <div className="flex-1 flex flex-col lg:flex-row gap-5 min-h-0">
-        {/* LEFT PANEL — Conversation Info */}
-        <div className="lg:w-[40%] bg-white rounded-2xl border border-stone-200 p-5 overflow-y-auto space-y-5">
+        {/* LEFT PANEL — Conversation Info (scrollable independently) */}
+        <div className="lg:w-[40%] bg-white rounded-2xl border border-stone-200 p-5 overflow-y-auto space-y-5 shrink-0">
           {/* Customer info */}
           <div>
             <h2 className="text-lg font-bold text-dark-gray">{conversation.customer_email}</h2>
@@ -233,7 +232,7 @@ export default function ConversationDetailPage() {
         </div>
 
         {/* RIGHT PANEL — Chat + Reply */}
-        <div className="lg:w-[60%] bg-white rounded-2xl border border-stone-200 flex flex-col min-h-[400px] lg:min-h-0 overflow-hidden">
+        <div className="lg:w-[60%] bg-white rounded-2xl border border-stone-200 flex flex-col min-h-0 overflow-hidden">
           {/* Chat header */}
           <div className="px-4 py-3 border-b border-stone-200 shrink-0">
             <div className="flex items-center justify-between">
@@ -256,15 +255,15 @@ export default function ConversationDetailPage() {
             </div>
           </div>
 
-          {/* Chat messages */}
-          <ChatHistory key={refreshKey} conversationId={conversationId} />
+          {/* Chat messages — scrollable */}
+          <ChatHistory ref={chatHistoryRef} conversationId={conversationId} />
 
           {/* Reply input or take-over prompt */}
           {isHumanMode ? (
             <ReplyInput
               conversationId={conversation.id}
               channel={conversation.channel}
-              onMessageSent={() => setRefreshKey((k) => k + 1)}
+              onOptimisticSend={(msg) => chatHistoryRef.current?.appendMessage(msg)}
             />
           ) : (
             <div className="border-t border-stone-200 p-4 bg-stone-50 text-center shrink-0">
