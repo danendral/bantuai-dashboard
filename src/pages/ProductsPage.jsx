@@ -304,7 +304,7 @@ export default function ProductsPage() {
                       {formatCurrency(product.price)}
                     </td>
                     <td className="py-3 px-3 text-gray-600 whitespace-nowrap">
-                      {product.weight ? `${product.weight}g` : '—'}
+                      {product.weight ? `${product.weight} kg` : '—'}
                     </td>
                     <td className="py-3 px-3">
                       <Badge value={product.segment} colorMap={SEGMENT_COLORS} />

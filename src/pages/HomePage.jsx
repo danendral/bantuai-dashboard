@@ -140,7 +140,7 @@ function ProductCard({ product, onClick }) {
         <div className="flex items-center justify-between">
           <p className="text-[10px] text-stone-400 font-mono">{product.sku}</p>
           {product.weight && (
-            <p className="text-[10px] text-stone-400">{product.weight}g</p>
+            <p className="text-[10px] text-stone-400">{product.weight} kg</p>
           )}
         </div>
       </div>
@@ -269,7 +269,7 @@ function ProductDetailModal({ product, onClose }) {
             <div className="bg-warm-gray rounded-xl p-3">
               <p className="text-[10px] text-medium-gray font-medium uppercase tracking-wide mb-0.5">Berat</p>
               <p className="text-sm font-semibold text-dark-gray">
-                {product.weight ? `${product.weight}g` : '-'}
+                {product.weight ? `${product.weight} kg` : '-'}
               </p>
             </div>
             <div className="bg-warm-gray rounded-xl p-3">

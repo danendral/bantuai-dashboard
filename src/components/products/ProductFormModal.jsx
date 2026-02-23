@@ -173,16 +173,17 @@ export default function ProductFormModal({ product, onSave, onClose, loading }) 
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Weight (gram)
+                Weight (kg)
               </label>
               <input
                 name="weight"
                 type="number"
                 min="0"
+                step="0.01"
                 value={form.weight}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
-                placeholder="e.g. 234"
+                placeholder="e.g. 0.23"
               />
             </div>
           </div>
