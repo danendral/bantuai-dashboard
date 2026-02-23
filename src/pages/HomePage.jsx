@@ -137,7 +137,12 @@ function ProductCard({ product, onClick }) {
           <SegmentBadge segment={product.segment} />
         </div>
 
-        <p className="text-[10px] text-stone-400 font-mono">{product.sku}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] text-stone-400 font-mono">{product.sku}</p>
+          {product.weight && (
+            <p className="text-[10px] text-stone-400">{product.weight}g</p>
+          )}
+        </div>
       </div>
     </button>
   )
@@ -260,6 +265,12 @@ function ProductDetailModal({ product, onClose }) {
             <div className="bg-warm-gray rounded-xl p-3">
               <p className="text-[10px] text-medium-gray font-medium uppercase tracking-wide mb-0.5">Segmen</p>
               <p className="text-sm font-semibold text-dark-gray capitalize">{product.segment || '-'}</p>
+            </div>
+            <div className="bg-warm-gray rounded-xl p-3">
+              <p className="text-[10px] text-medium-gray font-medium uppercase tracking-wide mb-0.5">Berat</p>
+              <p className="text-sm font-semibold text-dark-gray">
+                {product.weight ? `${product.weight}g` : '-'}
+              </p>
             </div>
             <div className="bg-warm-gray rounded-xl p-3">
               <p className="text-[10px] text-medium-gray font-medium uppercase tracking-wide mb-0.5">Stok</p>

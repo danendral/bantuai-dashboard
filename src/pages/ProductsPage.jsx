@@ -276,6 +276,9 @@ export default function ProductsPage() {
                   <th className="text-left py-3 px-3 text-gray-500 font-medium">
                     <SortHeader field="price">Price</SortHeader>
                   </th>
+                  <th className="text-left py-3 px-3 text-gray-500 font-medium">
+                    <SortHeader field="weight">Weight</SortHeader>
+                  </th>
                   <th className="text-left py-3 px-3 text-gray-500 font-medium">Segment</th>
                   <th className="text-left py-3 px-3 text-gray-500 font-medium">Stock</th>
                   <th className="text-right py-3 px-3 text-gray-500 font-medium">Actions</th>
@@ -299,6 +302,9 @@ export default function ProductsPage() {
                     <td className="py-3 px-3 text-gray-600">{product.brand}</td>
                     <td className="py-3 px-3 text-gray-900 whitespace-nowrap">
                       {formatCurrency(product.price)}
+                    </td>
+                    <td className="py-3 px-3 text-gray-600 whitespace-nowrap">
+                      {product.weight ? `${product.weight}g` : '—'}
                     </td>
                     <td className="py-3 px-3">
                       <Badge value={product.segment} colorMap={SEGMENT_COLORS} />

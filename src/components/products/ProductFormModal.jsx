@@ -10,6 +10,7 @@ const EMPTY_FORM = {
   category: '',
   brand: '',
   price: '',
+  weight: '',
   segment: '',
   in_stock: true,
 }
@@ -26,6 +27,7 @@ export default function ProductFormModal({ product, onSave, onClose, loading }) 
         category: product.category || '',
         brand: product.brand || '',
         price: product.price || '',
+        weight: product.weight || '',
         segment: product.segment || '',
         in_stock: product.in_stock ?? true,
       })
@@ -45,6 +47,7 @@ export default function ProductFormModal({ product, onSave, onClose, loading }) 
     onSave({
       ...form,
       price: Number(form.price),
+      weight: form.weight ? Number(form.weight) : null,
       segment: form.segment || null,
     })
   }
@@ -152,20 +155,36 @@ export default function ProductFormModal({ product, onSave, onClose, loading }) 
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Price (IDR) <span className="text-red-400">*</span>
-            </label>
-            <input
-              name="price"
-              type="number"
-              required
-              min="0"
-              value={form.price}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
-              placeholder="e.g. 4899000"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Price (IDR) <span className="text-red-400">*</span>
+              </label>
+              <input
+                name="price"
+                type="number"
+                required
+                min="0"
+                value={form.price}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                placeholder="e.g. 4899000"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Weight (gram)
+              </label>
+              <input
+                name="weight"
+                type="number"
+                min="0"
+                value={form.weight}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                placeholder="e.g. 234"
+              />
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
