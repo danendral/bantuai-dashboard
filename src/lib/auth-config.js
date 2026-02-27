@@ -1,6 +1,6 @@
 // Hardcoded credentials — swap this with a DB lookup or Supabase auth later
 const USERS = [
-  { email: 'admin@bantuai.com', password: 'bantuai2024', name: 'Admin', role: 'admin' },
+  { email: 'admin@gadgetnusa.ai', password: 'Bntu!@9xQ#2026', name: 'Admin', role: 'admin' },
 ]
 
 export const AUTH_STORAGE_KEY = 'bantuai_auth'
