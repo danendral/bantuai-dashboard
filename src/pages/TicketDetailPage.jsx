@@ -216,13 +216,15 @@ export default function TicketDetailPage() {
             </div>
             <div>
               <label className="block text-xs text-stone-400 font-medium mb-1">Assigned To</label>
-              <input
-                type="text"
+              <select
                 value={ticket.assigned_to || ''}
                 onChange={(e) => handleAssignedChange(e.target.value)}
-                placeholder="—"
-                className="w-full px-3 py-2 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-nusa-orange/30"
-              />
+                className="w-full px-3 py-2 border border-stone-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-nusa-orange/30"
+              >
+                <option value="">— Belum ditugaskan —</option>
+                <option value="Agent Dewi">Agent Dewi</option>
+                <option value="Agent Budi">Agent Budi</option>
+              </select>
             </div>
           </div>
 
