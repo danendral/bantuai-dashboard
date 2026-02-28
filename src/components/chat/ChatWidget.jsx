@@ -14,6 +14,50 @@ function generateSessionId() {
   return crypto.randomUUID()
 }
 
+/* ------------------------------------------------------------------ */
+/*  Look up the real Supabase conversation_id after the first message  */
+/* ------------------------------------------------------------------ */
+async function discoverConversationId(sessionId, firstUserMessage) {
+  // Attempt 1 — sessionId IS the conversation_id
+  const { data: a1 } = await supabase
+    .from('messages')
+    .select('conversation_id')
+    .eq('conversation_id', sessionId)
+    .limit(1)
+
+  if (a1 && a1.length > 0) return a1[0].conversation_id
+
+  // Attempt 2 — search for the exact user message sent recently
+  const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+  const { data: a2 } = await supabase
+    .from('messages')
+    .select('conversation_id')
+    .eq('role', 'user')
+    .eq('content', firstUserMessage)
+    .gte('created_at', fiveMinAgo)
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+  if (a2 && a2.length > 0) return a2[0].conversation_id
+
+  // Attempt 3 — most recent web conversation started in the last 5 min
+  const { data: a3 } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('channel', 'Web')
+    .gte('started_at', fiveMinAgo)
+    .order('started_at', { ascending: false })
+    .limit(1)
+
+  if (a3 && a3.length > 0) return a3[0].id
+
+  return null
+}
+
+/* ------------------------------------------------------------------ */
+/*  Sub-components                                                     */
+/* ------------------------------------------------------------------ */
+
 function ChatBubble({ role, text }) {
   const isUser = role === 'user'
   const isAgent = role === 'agent'
@@ -74,6 +118,10 @@ function QuickReplyButton({ text, onClick }) {
   )
 }
 
+/* ------------------------------------------------------------------ */
+/*  Main widget                                                        */
+/* ------------------------------------------------------------------ */
+
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState([])
@@ -85,9 +133,10 @@ export default function ChatWidget() {
   const [pendingMessage, setPendingMessage] = useState(null)
 
   // Polling state
-  const [conversationStarted, setConversationStarted] = useState(false)
+  const [conversationId, setConversationId] = useState(null) // real Supabase id
   const [agentConnected, setAgentConnected] = useState(false)
   const loadingRef = useRef(false)
+  const firstUserMsgRef = useRef(null) // store first message text for lookup
 
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
@@ -99,7 +148,7 @@ export default function ChatWidget() {
     'Cek stok produk',
   ]
 
-  // Keep loadingRef in sync with isLoading state
+  // Keep loadingRef in sync
   useEffect(() => {
     loadingRef.current = isLoading
   }, [isLoading])
@@ -152,19 +201,18 @@ export default function ChatWidget() {
 
   // ---- Poll Supabase for new messages (picks up admin agent replies) ----
   useEffect(() => {
-    if (!conversationStarted || !isOpen) return
+    if (!conversationId || !isOpen) return
 
     let cancelled = false
 
     async function poll() {
-      // Skip while a webhook request is in-flight so we don't overwrite the
-      // optimistic user message before Supabase has stored it
+      // Skip while a webhook request is in-flight
       if (loadingRef.current) return
 
       const { data } = await supabase
         .from('messages')
         .select('*')
-        .eq('conversation_id', sessionId)
+        .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true })
 
       if (cancelled || !data || data.length === 0) return
@@ -191,11 +239,14 @@ export default function ChatWidget() {
       cancelled = true
       clearInterval(interval)
     }
-  }, [conversationStarted, isOpen, sessionId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [conversationId, isOpen]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function doSendMessage(messageText) {
     const trimmed = messageText.trim()
     if (!trimmed || isLoading) return
+
+    // Remember the first user message for conversation discovery
+    if (!firstUserMsgRef.current) firstUserMsgRef.current = trimmed
 
     setError(null)
     setShowQuickReplies(false)
@@ -220,17 +271,29 @@ export default function ChatWidget() {
 
       const data = await res.json()
 
+      // Extract the reply — ignore empty strings from human-mode responses
       const reply =
         data.response ||
         data.output ||
         data.text ||
         data.message ||
-        (typeof data === 'string' ? data : JSON.stringify(data))
+        (typeof data === 'string' ? data : null)
 
-      setMessages((prev) => [...prev, { role: 'assistant', text: reply }])
+      // Only add a bubble if there's a non-empty reply
+      if (reply && reply.trim()) {
+        setMessages((prev) => [...prev, { role: 'assistant', text: reply }])
+      }
 
-      // Mark conversation as started — polling begins on next render
-      if (!conversationStarted) setConversationStarted(true)
+      // Discover the real conversation_id so polling can start
+      if (!conversationId) {
+        const realId = await discoverConversationId(sessionId, firstUserMsgRef.current)
+        if (realId) {
+          console.log('[ChatWidget] Discovered conversation_id:', realId)
+          setConversationId(realId)
+        } else {
+          console.warn('[ChatWidget] Could not discover conversation_id — polling will not start')
+        }
+      }
     } catch (err) {
       console.error('Chat error:', err)
       setError('Maaf, terjadi kesalahan. Silakan coba lagi.')
@@ -241,8 +304,11 @@ export default function ChatWidget() {
           text: 'Maaf, saya sedang mengalami gangguan. Silakan coba lagi dalam beberapa saat.',
         },
       ])
-      // Still start polling even on error — the user message may have been stored
-      if (!conversationStarted) setConversationStarted(true)
+      // Still attempt discovery on error — the message may have been stored
+      if (!conversationId) {
+        const realId = await discoverConversationId(sessionId, firstUserMsgRef.current)
+        if (realId) setConversationId(realId)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -267,8 +333,9 @@ export default function ChatWidget() {
 
   const handleNewChat = () => {
     setSessionId(generateSessionId())
-    setConversationStarted(false)
+    setConversationId(null)
     setAgentConnected(false)
+    firstUserMsgRef.current = null
     setMessages([WELCOME_MESSAGE])
     setError(null)
     setShowQuickReplies(true)
