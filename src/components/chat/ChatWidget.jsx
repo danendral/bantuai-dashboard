@@ -59,7 +59,7 @@ async function discoverConversationId(sessionId, firstUserMessage) {
 /* ------------------------------------------------------------------ */
 
 function ChatBubble({ role, text }) {
-  const isUser = role === 'user'
+  const isUser = role === 'user' || role === 'customer'
   const isAgent = role === 'agent'
 
   return (
