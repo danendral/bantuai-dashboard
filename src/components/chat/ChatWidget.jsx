@@ -1,7 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { MessageCircle, X, Send, Loader2, RotateCcw, Zap } from 'lucide-react'
+import { MessageCircle, X, Send, Loader2, RotateCcw, Zap, Headset } from 'lucide-react'
+import { supabase } from '../../lib/supabase'
 
 const CHAT_WEBHOOK_URL = import.meta.env.VITE_N8N_CHAT_WEBHOOK_URL
+
+const WELCOME_MESSAGE = {
+  id: 'welcome',
+  role: 'assistant',
+  text: 'Halo! Selamat datang di GadgetNusa. Saya AI Assistant yang siap membantu Anda. Mau tanya soal produk, harga, atau stok? Silakan ketik atau pilih topik di bawah.',
+}
 
 function generateSessionId() {
   return crypto.randomUUID()
@@ -9,17 +16,29 @@ function generateSessionId() {
 
 function ChatBubble({ role, text }) {
   const isUser = role === 'user'
+  const isAgent = role === 'agent'
+
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
-        <div className="w-7 h-7 rounded-lg bg-nusa-orange/10 flex items-center justify-center mr-2 shrink-0 mt-1">
-          <Zap className="w-3.5 h-3.5 text-nusa-orange" />
+        <div
+          className={`w-7 h-7 rounded-lg flex items-center justify-center mr-2 shrink-0 mt-1 ${
+            isAgent ? 'bg-fresh-green/10' : 'bg-nusa-orange/10'
+          }`}
+        >
+          {isAgent ? (
+            <Headset className="w-3.5 h-3.5 text-fresh-green" />
+          ) : (
+            <Zap className="w-3.5 h-3.5 text-nusa-orange" />
+          )}
         </div>
       )}
       <div
         className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
           isUser
             ? 'bg-nusa-orange text-white rounded-br-md'
+            : isAgent
+            ? 'bg-green-50 text-dark-gray border border-green-200 rounded-bl-md'
             : 'bg-stone-100 text-dark-gray rounded-bl-md'
         }`}
       >
@@ -60,10 +79,15 @@ export default function ChatWidget() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [sessionId] = useState(() => generateSessionId())
+  const [sessionId, setSessionId] = useState(() => generateSessionId())
   const [error, setError] = useState(null)
   const [showQuickReplies, setShowQuickReplies] = useState(true)
   const [pendingMessage, setPendingMessage] = useState(null)
+
+  // Polling state
+  const [conversationStarted, setConversationStarted] = useState(false)
+  const [agentConnected, setAgentConnected] = useState(false)
+  const loadingRef = useRef(false)
 
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
@@ -74,6 +98,11 @@ export default function ChatWidget() {
     'Earbuds terbaik',
     'Cek stok produk',
   ]
+
+  // Keep loadingRef in sync with isLoading state
+  useEffect(() => {
+    loadingRef.current = isLoading
+  }, [isLoading])
 
   // Auto-scroll to bottom when messages change
   const scrollToBottom = useCallback(() => {
@@ -94,12 +123,7 @@ export default function ChatWidget() {
   // Add welcome message on first open
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      setMessages([
-        {
-          role: 'assistant',
-          text: 'Halo! Selamat datang di GadgetNusa. Saya AI Assistant yang siap membantu Anda. Mau tanya soal produk, harga, atau stok? Silakan ketik atau pilih topik di bawah.',
-        },
-      ])
+      setMessages([WELCOME_MESSAGE])
     }
   }, [isOpen, messages.length])
 
@@ -125,6 +149,49 @@ export default function ChatWidget() {
     window.addEventListener('gadgetnusa:open-chat', handleOpenChat)
     return () => window.removeEventListener('gadgetnusa:open-chat', handleOpenChat)
   }, [])
+
+  // ---- Poll Supabase for new messages (picks up admin agent replies) ----
+  useEffect(() => {
+    if (!conversationStarted || !isOpen) return
+
+    let cancelled = false
+
+    async function poll() {
+      // Skip while a webhook request is in-flight so we don't overwrite the
+      // optimistic user message before Supabase has stored it
+      if (loadingRef.current) return
+
+      const { data } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', sessionId)
+        .order('created_at', { ascending: true })
+
+      if (cancelled || !data || data.length === 0) return
+
+      const mapped = data.map((m) => ({
+        id: m.id,
+        role: m.role,
+        text: m.content,
+      }))
+
+      // Prepend the welcome message so it always appears first
+      setMessages([WELCOME_MESSAGE, ...mapped])
+
+      // Detect agent takeover
+      if (data.some((m) => m.role === 'agent')) {
+        setAgentConnected(true)
+      }
+    }
+
+    // First poll immediately, then every 5 seconds
+    poll()
+    const interval = setInterval(poll, 5000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [conversationStarted, isOpen, sessionId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function doSendMessage(messageText) {
     const trimmed = messageText.trim()
@@ -161,6 +228,9 @@ export default function ChatWidget() {
         (typeof data === 'string' ? data : JSON.stringify(data))
 
       setMessages((prev) => [...prev, { role: 'assistant', text: reply }])
+
+      // Mark conversation as started — polling begins on next render
+      if (!conversationStarted) setConversationStarted(true)
     } catch (err) {
       console.error('Chat error:', err)
       setError('Maaf, terjadi kesalahan. Silakan coba lagi.')
@@ -171,6 +241,8 @@ export default function ChatWidget() {
           text: 'Maaf, saya sedang mengalami gangguan. Silakan coba lagi dalam beberapa saat.',
         },
       ])
+      // Still start polling even on error — the user message may have been stored
+      if (!conversationStarted) setConversationStarted(true)
     } finally {
       setIsLoading(false)
     }
@@ -194,12 +266,10 @@ export default function ChatWidget() {
   }
 
   const handleNewChat = () => {
-    setMessages([
-      {
-        role: 'assistant',
-        text: 'Halo! Selamat datang di GadgetNusa. Saya AI Assistant yang siap membantu Anda. Mau tanya soal produk, harga, atau stok? Silakan ketik atau pilih topik di bawah.',
-      },
-    ])
+    setSessionId(generateSessionId())
+    setConversationStarted(false)
+    setAgentConnected(false)
+    setMessages([WELCOME_MESSAGE])
     setError(null)
     setShowQuickReplies(true)
   }
@@ -209,17 +279,21 @@ export default function ChatWidget() {
       {/* Chat panel */}
       {isOpen && (
         <div className="mb-3 w-[380px] sm:w-[420px] h-[560px] bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden flex flex-col animate-fade-in">
-          {/* Header */}
+          {/* Header — switches icon + label when an agent takes over */}
           <div className="bg-nusa-dark px-4 py-3.5 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 bg-nusa-orange rounded-lg flex items-center justify-center">
-                <Zap className="w-4 h-4 text-white" />
+                {agentConnected ? (
+                  <Headset className="w-4 h-4 text-white" />
+                ) : (
+                  <Zap className="w-4 h-4 text-white" />
+                )}
               </div>
               <div>
                 <span className="text-sm font-bold text-white">GadgetNusa</span>
                 <span className="flex items-center gap-1.5 text-[10px] text-stone-500">
                   <span className="w-1.5 h-1.5 bg-fresh-green rounded-full" />
-                  AI Assistant &middot; Online
+                  {agentConnected ? 'Live Agent \u00b7 Online' : 'AI Assistant \u00b7 Online'}
                 </span>
               </div>
             </div>
@@ -242,9 +316,26 @@ export default function ChatWidget() {
 
           {/* Messages area */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-warm-gray/50">
-            {messages.map((msg, i) => (
-              <ChatBubble key={i} role={msg.role} text={msg.text} />
-            ))}
+            {messages.map((msg, i) => {
+              // Show agent-connected banner right before the first agent message
+              const isFirstAgent =
+                msg.role === 'agent' &&
+                !messages.slice(0, i).some((m) => m.role === 'agent')
+
+              return (
+                <div key={msg.id || `msg-${i}`}>
+                  {isFirstAgent && (
+                    <div className="flex justify-center py-2">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 border border-green-200 rounded-full text-[11px] text-green-700 font-medium">
+                        <Headset className="w-3 h-3" />
+                        Anda sekarang terhubung dengan agent kami
+                      </span>
+                    </div>
+                  )}
+                  <ChatBubble role={msg.role} text={msg.text} />
+                </div>
+              )
+            })}
 
             {/* Quick replies */}
             {showQuickReplies && messages.length <= 1 && !isLoading && (
