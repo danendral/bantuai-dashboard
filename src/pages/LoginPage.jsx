@@ -13,6 +13,7 @@ export default function LoginPage() {
   const { login, user } = useAuth()
   const navigate = useNavigate()
 
+
   // If already logged in, redirect to dashboard
   if (user) {
     navigate('/admin', { replace: true })
