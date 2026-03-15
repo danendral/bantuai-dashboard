@@ -66,9 +66,8 @@ function ChatBubble({ role, text }) {
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
         <div
-          className={`w-7 h-7 rounded-lg flex items-center justify-center mr-2 shrink-0 mt-1 ${
-            isAgent ? 'bg-fresh-green/10' : 'bg-nusa-orange/10'
-          }`}
+          className={`w-7 h-7 rounded-lg flex items-center justify-center mr-2 shrink-0 mt-1 ${isAgent ? 'bg-fresh-green/10' : 'bg-nusa-orange/10'
+            }`}
         >
           {isAgent ? (
             <Headset className="w-3.5 h-3.5 text-fresh-green" />
@@ -78,13 +77,12 @@ function ChatBubble({ role, text }) {
         </div>
       )}
       <div
-        className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
-          isUser
+        className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${isUser
             ? 'bg-nusa-orange text-white rounded-br-md'
             : isAgent
-            ? 'bg-green-50 text-dark-gray border border-green-200 rounded-bl-md'
-            : 'bg-stone-100 text-dark-gray rounded-bl-md'
-        }`}
+              ? 'bg-green-50 text-dark-gray border border-green-200 rounded-bl-md'
+              : 'bg-stone-100 text-dark-gray rounded-bl-md'
+          }`}
       >
         {text}
       </div>
@@ -183,7 +181,7 @@ export default function ChatWidget() {
       setPendingMessage(null)
       doSendMessage(msg)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, pendingMessage, isLoading, messages.length])
 
   // Listen for external events to open chat + optionally send a message
